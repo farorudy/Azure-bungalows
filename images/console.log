@@ -1,0 +1,5 @@
+function getData() {
+  const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'data.json'), 'utf8'));
+  console.log('Données chargées :', data); // 🔍 Debug
+  return data;
+}

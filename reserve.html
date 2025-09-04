@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formulaire de réservation</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="/favicon.ico" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📝 Réserver un bungalow</h1>
+      <p>Veuillez remplir le formulaire ci-dessous</p>
+    </header>
+
+    <form action="/submit-reservation" method="POST">
+      <div class="form-group">
+        <label for="name">Nom complet</label>
+        <input type="text" id="name" name="name" required style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px;">
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px;">
+      </div>
+
+      <div class="form-group">
+        <label for="bungalow">Bungalow souhaité</label>
+        <select id="bungalow" name="bungalow" required style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px;">
+          <option value="Bungalow 1">Bungalow 1 (Vue lac)</option>
+          <option value="Bungalow 2">Bungalow 2 (Forêt)</option>
+          <option value="Bungalow 3">Bungalow 3 (Familial)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="dates">Dates souhaitées</label>
+        <input type="text" id="dates" name="dates" placeholder="ex: 10-15 juillet" required style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px;">
+      </div>
+
+      <button type="submit" class="btn">Envoyer la demande</button>
+    </form>
+
+    <footer>
+      <p><a href="/">← Retour à la disponibilité</a></p>
+    </footer>
+  </div>
+</body>
+</html>

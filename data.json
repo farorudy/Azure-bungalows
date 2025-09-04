@@ -1,0 +1,65 @@
+{
+  "bungalows": [
+    {
+      "id": 1,
+      "name": "Suite Sapote",
+      "type": "suite",
+      "size": "Logement spacieux • Étage • Côté droit",
+      "desc_fr": "Le plus grand de nos bungalows, idéal pour un séjour en couple ou en famille. Vue dégagée, intimité maximale et décoration élégante.",
+      "price": "130 €/nuit",
+      "image": "/images/logements/suite-sapote.png"
+    },
+    {
+      "id": 2,
+      "name": "Studio Flamboyant",
+      "type": "studio",
+      "size": "Cozy et lumineux • Étage • À côté de la Suite Sapote",
+      "desc_fr": "Cozy et lumineux, parfait pour un couple en quête d’intimité. Terrasse privative et accès rapide aux espaces communs.",
+      "price": "95 €/nuit",
+      "image": "/images/logements/studio-flamboyant.png"
+    },
+    {
+      "id": 3,
+      "name": "T2 Raisin Bord de mer",
+      "type": "t2",
+      "size": "Rez-de-chaussée • Gauche",
+      "desc_fr": "Proche de la plage, ce T2 offre un accès direct au jardin tropical. Idéal pour les familles ou groupes d’amis.",
+      "price": "110 €/nuit",
+      "image": "/images/logements/t2-raisins-bord-de-mer.png"
+    },
+    {
+      "id": 4,
+      "name": "T2 Papaye",
+      "type": "t2",
+      "size": "Rez-de-chaussée • Droite",
+      "desc_fr": "Confortable et bien équipé, ce bungalow moderne est parfait pour un séjour en famille. Climatisation et cuisine équipée.",
+      "price": "120 €/nuit",
+      "image": "/images/logements/t2-papaye.png"
+    },
+    {
+      "id": 5,
+      "name": "Studio TiKaz",
+      "type": "studio",
+      "size": "Rez-de-chaussée • Milieu",
+      "desc_fr": "Petit nid douillet pour deux, au cœur de la résidence. Accès facile, calme et confort assuré.",
+      "price": "85 €/nuit",
+      "image": "/images/logements/studio-tikaz.png"
+    }
+  ],
+"gallery": [
+  "/images/galerie/entree.png",
+  "/images/galerie/hero-2.jpg",
+  "/images/galerie/cuisine-flamboyant.png",
+  "/images/galerie/coin-flamboyant.png",
+  "/images/galerie/entree-studio-flamboyant.png",
+  "/images/videos/chambre-suite-sapote.mov",
+  "/images/galerie/salle-de-bain-2.png",
+  "/images/galerie/salle-de-bain-papaye.png"
+  ],
+  "contact": {
+    "email": "contact@bungalowsazure.site",
+    "phone": "+590 690 570 846",
+    "location": "Saint-François, Guadeloupe"
+  },
+  "lastUpdated": "2025-04-05"
+}
