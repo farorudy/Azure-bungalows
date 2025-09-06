@@ -348,56 +348,63 @@ app.get('/reserver', (req, res) => {
   `);
 });
 
-// === Création du paiement PayPal ===
+// === Créer un paiement PayPal ===
 app.post('/create-paypal-payment', (req, res) => {
-  const { bungalowId, name, email, dates } = req.body;
-  const data = getData();
-  const bungalow = data.bungalows.find(b => b.id === bungalowId);
+  try {
+    // Votre logique PayPal ici
+    console.log("✅ Requête reçue sur /create-paypal-payment");
+    const { bungalowId, name, email, dates } = req.body;
+    const data = getData();
+    const bungalow = data.bungalows.find(b => b.id === bungalowId);
 
-  if (!bungalow) {
-    return res.status(404).json({ error: "Bungalow non trouvé." });
-  }
+    if (!bungalow) {
+      return res.status(404).json({ error: "Bungalow non trouvé." });
+    }
 
-  // Montant à payer (en fonction du bungalow et de la durée du séjour)
-  const price = parseFloat(bungalow.price.replace(' €/nuit', '')).toFixed(2); // "130.00"
-  const totalAmount = (price * 1).toFixed(2); // Prix pour 1 nuit
+    // Montant à payer (en fonction du bungalow et de la durée du séjour)
+    const price = parseFloat(bungalow.price.replace(' €/nuit', '')).toFixed(2); // "130.00"
+    const totalAmount = (price * 1).toFixed(2); // Prix pour 1 nuit
 
-  // Création de la payment en utilisant l'API de PayPal
-  paypal.payment.create({
-    intent: 'sale',
-    payer: {
-      payment_method: 'paypal'
-    },
-    transactions: [{
-      amount: {
-        total: totalAmount,
-        currency: 'EUR',
-        details: {
-          subtotal: totalAmount,
-          shipping: "0.00",
-          tax: "0.00"
-        }
+    // Création de la payment en utilisant l'API de PayPal
+    paypal.payment.create({
+      intent: 'sale',
+      payer: {
+        payment_method: 'paypal'
       },
-      description: `Réservation bungalow ${bungalow.name} - ${dates}`,
-      custom: JSON.stringify({ bungalowId, name, email, dates }) // Infos supplémentaires
-    }],
-    redirect_urls: {
-      return_url: `${req.protocol}://${req.get('host')}/success-paypal?amount=${price}`,
-      cancel_url: `${req.protocol}://${req.get('host')}/cancel-paypal`
-    }
-  }, (error, payment) => {
-    if (error) {
-      console.error("Erreur lors de la création du paiement PayPal:", error);
-      return res.status(500).json({ error: "Erreur serveur lors de la création du paiement." });
-    }
-    // Recherche des URLs d'approbation
-    const approvalUrl = payment.links.find(link => link.rel === 'approval_url');
-    if (!approvalUrl) {
-      return res.status(500).json({ error: "Erreur lors de la redirection vers PayPal." });
-    }
-    // Envoi de l'URL d'approbation au client
-    res.json({ approvalUrl: approvalUrl.href });
-  });
+      transactions: [{
+        amount: {
+          total: totalAmount,
+          currency: 'EUR',
+          details: {
+            subtotal: totalAmount,
+            shipping: "0.00",
+            tax: "0.00"
+          }
+        },
+        description: `Réservation bungalow ${bungalow.name} - ${dates}`,
+        custom: JSON.stringify({ bungalowId, name, email, dates }) // Infos supplémentaires
+      }],
+      redirect_urls: {
+        return_url: `${req.protocol}://${req.get('host')}/success-paypal?amount=${price}`,
+        cancel_url: `${req.protocol}://${req.get('host')}/cancel-paypal`
+      }
+    }, (error, payment) => {
+      if (error) {
+        console.error("Erreur lors de la création du paiement PayPal:", error);
+        return res.status(500).json({ error: "Erreur serveur lors de la création du paiement." });
+      }
+      // Recherche des URLs d'approbation
+      const approvalUrl = payment.links.find(link => link.rel === 'approval_url');
+      if (!approvalUrl) {
+        return res.status(500).json({ error: "Erreur lors de la redirection vers PayPal." });
+      }
+      // Envoi de l'URL d'approbation au client
+      res.json({ approvalUrl: approvalUrl.href });
+    });
+  } catch (err) {
+    console.error("❌ Erreur:", err);
+    res.status(500).json({ error: "Erreur interne" });
+  }
 });
 
 // === Page de succès PayPal ===
