@@ -236,77 +236,227 @@ app.get('/disponibilite', (req, res) => {
 });
 // === Formulaire de réservation ===
 app.get('/reserver', (req, res) => {
-  // On récupère tous les bungalows pour le select si pas de bungalowId
-  const data = getData();
-  const bungalows = data.bungalows || [];
-  const bungalowId = req.query.bungalowId || '';
-
-  // Génère le select si pas de bungalowId dans l'URL
-  const bungalowSelect = bungalows.length && !bungalowId
-    ? `<div class="mb-4">
-        <label class="block mb-1">Choix du bungalow</label>
-        <select name="bungalowId" required class="w-full border-slate-300 rounded-lg">
-          <option value="">-- Sélectionner --</option>
-          ${bungalows.map(b => `<option value="${b.id}">${b.name} (${b.price})</option>`).join('')}
-        </select>
-      </div>`
-    : `<input type="hidden" name="bungalowId" value="${bungalowId}" />`;
-
   res.send(`
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <title>Réserver</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.paypal.com/sdk/js?client-id=AFcWxV21C7fd0v3bYYYRCpSSRl31AKAsF3zYYsXjhXBQAT9kkmkwtoAu&currency=EUR"></script>
+  <!-- Ajout du SDK PayPal Hosted Buttons -->
+  <script 
+    src="https://www.paypal.com/sdk/js?client-id=BAAUvJgFr4L06Nvzei3b8rd_Xm4bKZAEKDlKp6rqVaElBqEJSjMsyvvqEfLBdHxG532FO98LspA5vqs3z8&components=hosted-buttons&disable-funding=venmo&currency=EUR">
+  </script>
   <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="bg-slate-50 text-slate-800 py-12">
   <div class="max-w-md mx-auto px-4">
     <a href="/" class="inline-block mb-6 text-sky-600 hover:underline">← Retour</a>
     <h1 class="text-2xl font-bold mb-6">📝 Réserver un bungalow</h1>
-    <form id="paypal-form" class="bg-white p-6 rounded-xl shadow">
-      ${bungalowSelect}
-      <div class="mb-4">
-        <label class="block mb-1">Nom</label>
-        <input name="name" required class="w-full border-slate-300 rounded-lg" />
-      </div>
-      <div class="mb-4">
-        <label class="block mb-1">Email</label>
-        <input type="email" name="email" required class="w-full border-slate-300 rounded-lg" />
-      </div>
-      <div class="mb-4">
-        <label class="block mb-1">Dates souhaitées</label>
-        <input name="dates" placeholder="ex: 10-15 juillet" required class="w-full border-slate-300 rounded-lg" />
-      </div>
-      <button type="submit" class="w-full py-3 bg-sky-600 text-white rounded-lg">Envoyer la demande</button>
-    </form>
+    <!-- Main reservation form -->
+    <div class="bg-white rounded-lg shadow-lg p-8">
+        <form id="reservationForm" class="space-y-6">
+            <!-- CORRIGÉ: Bungalow ID dynamique -->
+            <input type="hidden" id="bungalowId" value="">
 
-    <!-- Bouton PayPal -->
-    <div id="paypal-button-container" class="mt-4"></div>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        if (window.paypal) {
-          paypal.Buttons({
-            onClick: function(data, actions) {
-              const form = document.getElementById('paypal-form');
-              const formData = new FormData(form);
-              const payload = {
-                name: formData.get('name'),
-                email: formData.get('email'),
-                dates: formData.get('dates'),
-                bungalowId: formData.get('bungalowId')
-              };
-              if (!payload.bungalowId) {
-                alert("Veuillez sélectionner un bungalow.");
-                return actions.reject();
-              }
-              return fetch('/create-paypal-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              })
-              .then(res => res.json())
-              .then(data => {
-                if
+            <!-- Personal information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">Nom *</label>
+                    <input type="text" id="nom" name="nom" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input type="email" id="email" name="email" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+            </div>
+
+            <!-- Date selection -->
+            <div>
+                <label for="dates" class="block text-sm font-medium text-gray-700 mb-2">Dates souhaitées *</label>
+                <input type="date" id="checkin" name="checkin" required 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-2">
+                <input type="date" id="checkout" name="checkout" required 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+
+            <!-- Payment information -->
+            <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Paiement sécurisé</h3>
+                <p class="text-gray-600 mb-4">
+                    Pour confirmer votre réservation, veuillez effectuer le paiement via PayPal.
+                    Le paiement sera débité uniquement après validation de votre réservation.
+                </p>
+                
+                <!-- PayPal Hosted Button container -->
+                <div id="paypal-hosted-button-container" class="flex justify-center"></div>
+            </div>
+
+            <!-- Reservation details summary -->
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Détails de la réservation</h3>
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Bungalow sélectionné:</span>
+                        <span id="bungalowName" class="font-medium">À déterminer</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Prix par nuit:</span>
+                        <span id="pricePerNight" class="font-medium">À déterminer</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Durée du séjour:</span>
+                        <span id="duration" class="font-medium">À déterminer</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-lg pt-2 border-t">
+                        <span>Total à payer:</span>
+                        <span id="totalAmount">0€</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit button (disabled until payment is completed) -->
+            <div class="text-center">
+                <button type="submit" id="submitBtn" disabled
+                        class="bg-primary text-white px-8 py-3 rounded-md font-medium hover:bg-secondary transition-colors duration-200 opacity-50 cursor-not-allowed">
+                    Confirmer la réservation
+                </button>
+                <p class="text-sm text-gray-500 mt-2">La réservation sera confirmée après paiement réussi</p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8 text-gray-600">
+        <p>© 2023 Azure Bungalows. Tous droits réservés.</p>
+    </div>
+</div>
+
+<script>
+    // Ici, vous pouvez initialiser le bouton PayPal Hosted Buttons si besoin
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.paypal && paypal.HostedButtons) {
+        paypal.HostedButtons({
+          hostedButtonId: "VOTRE_HOSTED_BUTTON_ID"
+        }).render("#paypal-hosted-button-container");
+      }
+    });
+</script>
+  `);
+});
+
+// === Création du paiement PayPal ===
+app.post('/create-paypal-payment', (req, res) => {
+  const { bungalowId, name, email, dates } = req.body;
+  const data = getData();
+  const bungalow = data.bungalows.find(b => b.id === bungalowId);
+
+  if (!bungalow) {
+    return res.status(404).json({ error: "Bungalow non trouvé." });
+  }
+
+  // Montant à payer (en fonction du bungalow et de la durée du séjour)
+  const price = parseFloat(bungalow.price.replace(' €/nuit', '')).toFixed(2); // "130.00"
+  const totalAmount = (price * 1).toFixed(2); // Prix pour 1 nuit
+
+  // Création de la payment en utilisant l'API de PayPal
+  paypal.payment.create({
+    intent: 'sale',
+    payer: {
+      payment_method: 'paypal'
+    },
+    transactions: [{
+      amount: {
+        total: totalAmount,
+        currency: 'EUR',
+        details: {
+          subtotal: totalAmount,
+          shipping: "0.00",
+          tax: "0.00"
+        }
+      },
+      description: `Réservation bungalow ${bungalow.name} - ${dates}`,
+      custom: JSON.stringify({ bungalowId, name, email, dates }) // Infos supplémentaires
+    }],
+    redirect_urls: {
+      return_url: `${req.protocol}://${req.get('host')}/success-paypal?amount=${price}`,
+      cancel_url: `${req.protocol}://${req.get('host')}/cancel-paypal`
+    }
+  }, (error, payment) => {
+    if (error) {
+      console.error("Erreur lors de la création du paiement PayPal:", error);
+      return res.status(500).json({ error: "Erreur serveur lors de la création du paiement." });
+    }
+    // Recherche des URLs d'approbation
+    const approvalUrl = payment.links.find(link => link.rel === 'approval_url');
+    if (!approvalUrl) {
+      return res.status(500).json({ error: "Erreur lors de la redirection vers PayPal." });
+    }
+    // Envoi de l'URL d'approbation au client
+    res.json({ approvalUrl: approvalUrl.href });
+  });
+});
+
+// === Page de succès PayPal ===
+app.get('/paypal-success', (req, res) => {
+  const { paymentId, PayerID } = req.query;
+
+  // On pourrait ici vérifier le paiement avec PayPal et enregistrer la réservation
+
+  res.send(`
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Merci pour votre réservation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 py-12">
+  <div class="max-w-md mx-auto px-4">
+    <a href="/" class="inline-block mb-6 text-sky-600 hover:underline">← Retour à l'accueil</a>
+    <h1 class="text-2xl font-bold mb-4">✅ Merci pour votre réservation !</h1>
+    <p class="mb-4">Votre paiement a été reçu. Vous allez recevoir un email de confirmation sous peu.</p>
+    <p class="text-sm text-slate-500">ID de paiement : ${paymentId}</p>
+  </div>
+</body>
+</html>
+  `);
+});
+
+// === Page d'annulation PayPal ===
+app.get('/paypal-cancel', (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Réservation annulée</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 py-12">
+  <div class="max-w-md mx-auto px-4">
+    <a href="/" class="inline-block mb-6 text-sky-600 hover:underline">← Retour à l'accueil</a>
+    <h1 class="text-2xl font-bold mb-4">❌ Réservation annulée</h1>
+    <p class="mb-4">Votre réservation a été annulée. Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+  </div>
+</body>
+</html>
+  `);
+});
+
+app.listen(PORT, () => {
+  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+});
+
+// Nouveau test de démarrage
+if (require.main === module) {
+  console.log("Démarrage du serveur en mode test...");
+  app.listen(PORT, () => {
+    console.log(`Serveur de test démarré sur http://localhost:${PORT}`);
+  });
+}
