@@ -449,14 +449,6 @@ app.get('/paypal-cancel', (req, res) => {
   `);
 });
 
-app.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+app.listen(8080, '127.0.0.1', () => {
+  console.log('✅ Serveur Express démarré sur http://127.0.0.1:8080');
 });
-
-// Nouveau test de démarrage
-if (require.main === module) {
-  console.log("Démarrage du serveur en mode test...");
-  app.listen(PORT, () => {
-    console.log(`Serveur de test démarré sur http://localhost:${PORT}`);
-  });
-}
