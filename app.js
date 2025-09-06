@@ -24,6 +24,7 @@ function getData() {
 // === Middleware ===
 app.use(express.static(path.join(__dirname))); // Sert /images, /css, etc.
 app.use(express.urlencoded({ extended: true })); // Pour les formulaires
+app.use(express.json()); // <-- Ajoute ceci pour accepter le JSON
 
 // === Route principale — Page d'accueil ===
 app.get('/', (req, res) => {
@@ -235,7 +236,22 @@ app.get('/disponibilite', (req, res) => {
 });
 // === Formulaire de réservation ===
 app.get('/reserver', (req, res) => {
-  const bungalowId = req.query.bungalowId;
+  // On récupère tous les bungalows pour le select si pas de bungalowId
+  const data = getData();
+  const bungalows = data.bungalows || [];
+  const bungalowId = req.query.bungalowId || '';
+
+  // Génère le select si pas de bungalowId dans l'URL
+  const bungalowSelect = bungalows.length && !bungalowId
+    ? `<div class="mb-4">
+        <label class="block mb-1">Choix du bungalow</label>
+        <select name="bungalowId" required class="w-full border-slate-300 rounded-lg">
+          <option value="">-- Sélectionner --</option>
+          ${bungalows.map(b => `<option value="${b.id}">${b.name} (${b.price})</option>`).join('')}
+        </select>
+      </div>`
+    : `<input type="hidden" name="bungalowId" value="${bungalowId}" />`;
+
   res.send(`
 <!DOCTYPE html>
 <html lang="fr">
@@ -243,14 +259,15 @@ app.get('/reserver', (req, res) => {
   <meta charset="UTF-8" />
   <title>Réserver</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=AFcWxV21C7fd0v3bYYYRCpSSRl31AKAsF3zYYsXjhXBQAT9kkmkwtoAu&currency=EUR"></script>
   <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="bg-slate-50 text-slate-800 py-12">
   <div class="max-w-md mx-auto px-4">
     <a href="/" class="inline-block mb-6 text-sky-600 hover:underline">← Retour</a>
     <h1 class="text-2xl font-bold mb-6">📝 Réserver un bungalow</h1>
-    <form method="post" action="/submit-reservation" class="bg-white p-6 rounded-xl shadow">
-      <input type="hidden" name="bungalowId" value="${bungalowId || ''}" />
+    <form id="paypal-form" class="bg-white p-6 rounded-xl shadow">
+      ${bungalowSelect}
       <div class="mb-4">
         <label class="block mb-1">Nom</label>
         <input name="name" required class="w-full border-slate-300 rounded-lg" />
@@ -265,190 +282,31 @@ app.get('/reserver', (req, res) => {
       </div>
       <button type="submit" class="w-full py-3 bg-sky-600 text-white rounded-lg">Envoyer la demande</button>
     </form>
-  </div>
-</body>
-</html>
-  `);
-});
 
-// === Traitement du formulaire ===
-app.post('/submit-reservation', (req, res) => {
-  const { name, email, bungalowId, dates } = req.body;
-  console.log("📩 Demande de réservation :", { name, email, bungalowId, dates });
-  res.send(`
-    <h1>✅ Demande envoyée !</h1>
-    <p>Merci ${name}, nous vous répondrons sous 24h.</p>
-    <a href="/">← Retour à l'accueil</a>
-  `);
-});
-app.post('/create-paypal-payment', (req, res) => {
-  const { bungalowId, name, email, dates } = req.body;
-
-  const data = getData();
-  const bungalow = data.bungalows.find(b => b.id == bungalowId);
-
-  if (!bungalow) {
-    return res.status(400).send('Bungalow non trouvé');
-  }
-
-  // Prix en centimes → euros (ex: 130 €)
-  const price = parseFloat(bungalow.price.replace(' €/nuit', '')) * 100; // 13000 centimes
-
-  const create_payment_json = {
-    "intent": "sale",
-    "payer": {
-      "payment_method": "paypal"
-    },
-    "redirect_urls": {
-      "return_url": `${req.protocol}://${req.get('host')}/success-paypal`,
-      "cancel_url": `${req.protocol}://${req.get('host')}/cancel-paypal`
-    },
-    "transactions": [{
-      "item_list": {
-        "items": [{
-          "name": bungalow.name,
-          "sku": bungalow.id,
-          "price": price.toFixed(2),
-          "currency": "EUR",
-          "quantity": 1
-        }]
-      },
-      "amount": {
-        "currency": "EUR",
-        "total": price.toFixed(2)
-      },
-      "description": `Réservation du ${dates} pour ${bungalow.name}`
-    }]
-  };
-
-  paypal.payment.create(create_payment_json, (error, payment) => {
-    if (error) {
-      console.error("❌ Erreur PayPal:", error);
-      res.status(500).send("Erreur de paiement");
-    } else {
-      // Redirige vers l’URL PayPal
-      for (let link of payment.links) {
-        if (link.rel === 'approval_url') {
-          return res.json({ redirect: link.href });
-        }
-      }
-      res.status(500).send("Impossible de générer le lien PayPal");
-    }
-  });
-});
-app.get('/reserved', (req, res) => {
-  res.send(`
-    <h1>✅ Réservation confirmée !</h1>
-    <p>Merci, nous vous répondrons sous 24h.</p>
-    <a href="/">← Retour à l'accueil</a>
-  `);
-});
-// === Formulaire de contact ===
-app.post('/contact', (req, res) => {
-  const { name, email, subject, message } = req.body;
-  console.log("📩 Message reçu :", { name, email, subject, message });
-  res.send(`
-    <h1>Merci ${name} !</h1>
-    <p>Nous vous répondrons sous 24h à ${email}.</p>
-    <a href="/">← Retour à l'accueil</a>
-  `);
-});
-app.post('/create-paypal-payment', (req, res) => {
-  const { bungalowId, name, email, dates } = req.body;
-
-  const data = getData();
-  const bungalow = data.bungalows.find(b => b.id == bungalowId);
-
-  if (!bungalow) {
-    return res.status(400).send('Bungalow non trouvé');
-  }
-
-  // Prix en centimes → euros (ex: 130 €)
-  const price = parseFloat(bungalow.price.replace(' €/nuit', '')) * 100; // 13000 centimes
-
-  const create_payment_json = {
-    "intent": "sale",
-    "payer": {
-      "payment_method": "paypal"
-    },
-    "redirect_urls": {
-      "return_url": `${req.protocol}://${req.get('host')}/success-paypal`,
-      "cancel_url": `${req.protocol}://${req.get('host')}/cancel-paypal`
-    },
-    "transactions": [{
-      "item_list": {
-        "items": [{
-          "name": bungalow.name,
-          "sku": bungalow.id,
-          "price": price.toFixed(2),
-          "currency": "EUR",
-          "quantity": 1
-        }]
-      },
-      "amount": {
-        "currency": "EUR",
-        "total": price.toFixed(2)
-      },
-      "description": `Réservation du ${dates} pour ${bungalow.name}`
-    }]
-  };
-
-  paypal.payment.create(create_payment_json, (error, payment) => {
-    if (error) {
-      console.error("❌ Erreur PayPal:", error);
-      res.status(500).send("Erreur de paiement");
-    } else {
-      // Redirige vers l’URL PayPal
-      for (let link of payment.links) {
-        if (link.rel === 'approval_url') {
-          return res.json({ redirect: link.href });
-        }
-      }
-      res.status(500).send("Impossible de générer le lien PayPal");
-    }
-  });
-});
-app.get('/success-paypal', (req, res) => {
-  const payerId = req.query.PayerID;
-  const paymentId = req.query.paymentId;
-
-  const execute_payment_json = {
-    "payer_id": payerId,
-    "transactions": [{
-      "amount": {
-        "currency": "EUR",
-        "total": "130.00" // Tu peux le rendre dynamique
-      }
-    }]
-  };
-
-  paypal.payment.execute(paymentId, execute_payment_json, (error, payment) => {
-    if (error) {
-      console.error("❌ Échec du paiement:", error);
-      res.send(`
-        <h1>❌ Paiement échoué</h1>
-        <p>Une erreur est survenue lors de la confirmation.</p>
-        <a href="/">← Retour à l'accueil</a>
-      `);
-    } else {
-      console.log("✅ Paiement réussi:", payment);
-      res.send(`
-        <h1>✅ Paiement confirmé !</h1>
-        <p>Merci, votre réservation est validée.</p>
-        <a href="/">← Retour à l'accueil</a>
-      `);
-    }
-  });
-});
-
-app.get('/cancel-paypal', (req, res) => {
-  res.send(`
-    <h1>❌ Paiement annulé</h1>
-    <p>Vous pouvez réessayer quand vous voulez.</p>
-    <a href="/">← Retour à l'accueil</a>
-  `);
-});
-// === Démarrer le serveur ===
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`✅ Serveur Express démarré sur http://127.0.0.1:${PORT}`);
-});
+    <!-- Bouton PayPal -->
+    <div id="paypal-button-container" class="mt-4"></div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.paypal) {
+          paypal.Buttons({
+            onClick: function(data, actions) {
+              const form = document.getElementById('paypal-form');
+              const formData = new FormData(form);
+              const payload = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                dates: formData.get('dates'),
+                bungalowId: formData.get('bungalowId')
+              };
+              if (!payload.bungalowId) {
+                alert("Veuillez sélectionner un bungalow.");
+                return actions.reject();
+              }
+              return fetch('/create-paypal-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              })
+              .then(res => res.json())
+              .then(data => {
+                if

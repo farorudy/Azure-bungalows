@@ -6,6 +6,8 @@
   <title>Formulaire de réservation</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="icon" href="/favicon.ico" />
+  <!-- SDK PayPal -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AFcWxV21C7fd0v3bYYYRCpSSRl31AKAsF3zYYsXjhXBQAT9kkmkwtoAu&currency=EUR"></script>
 </head>
 <body>
   <div class="container">
@@ -14,7 +16,7 @@
       <p>Veuillez remplir le formulaire ci-dessous</p>
     </header>
 
-    <form action="/submit-reservation" method="POST">
+    <form id="paypal-form" action="/submit-reservation" method="POST">
       <div class="form-group">
         <label for="name">Nom complet</label>
         <input type="text" id="name" name="name" required style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px;">
@@ -41,6 +43,45 @@
 
       <button type="submit" class="btn">Envoyer la demande</button>
     </form>
+
+    <!-- Bouton PayPal -->
+    <div id="paypal-button-container" style="margin-top: 24px;"></div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.paypal) {
+          paypal.Buttons({
+            onClick: function(data, actions) {
+              const form = document.getElementById('paypal-form');
+              const formData = new FormData(form);
+              // Adapter le nom des champs pour l'API backend
+              const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                dates: formData.get('dates'),
+                bungalowId: formData.get('bungalow') // correspond à l'id attendu côté serveur
+              };
+              return fetch('/create-paypal-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+              })
+              .then(res => res.json())
+              .then(result => {
+                if (result.redirect) {
+                  window.location.href = result.redirect;
+                } else {
+                  alert("Erreur lors de la création du paiement PayPal.");
+                }
+              });
+            },
+            createOrder: function() { return false; },
+            onError: function(err) {
+              alert("Erreur PayPal : " + err);
+            }
+          }).render('#paypal-button-container');
+        }
+      });
+    </script>
 
     <footer>
       <p><a href="/">← Retour à la disponibilité</a></p>
