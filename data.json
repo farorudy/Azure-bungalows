@@ -7,7 +7,7 @@
       "size": "Logement spacieux • Étage • Côté droit",
       "desc_fr": "Le plus grand de nos bungalows, idéal pour un séjour en couple ou en famille. Vue dégagée, intimité maximale et décoration élégante.",
       "price": "130 €/nuit",
-      "image": "/images/logements/suite-sapote.png"
+      "image": "/images/logements/suite-sapote2.png"
     },
     {
       "id": 2,
@@ -47,14 +47,14 @@
     }
   ],
 "gallery": [
-  "/images/galerie/entree.png",
-  "/images/galerie/hero-2.jpg",
-  "/images/galerie/cuisine-flamboyant.png",
+  "/images/galerie/vu-flamboyant.png",
+  "/images/galerie/vu-raisinborddemer.png",
+  "/images/galerie/entree-secondaire.png",
   "/images/galerie/coin-flamboyant.png",
-  "/images/galerie/entree-studio-flamboyant.png",
-  "/images/videos/chambre-suite-sapote.mov",
-  "/images/galerie/salle-de-bain-2.png",
-  "/images/galerie/salle-de-bain-papaye.png"
+  "/images/galerie/entree-studio-flamboyant.png ",
+  "/images/galerie/entree-suite-sapote2.png ",
+  "/images/galerie/salle-de-bain-complet-suite-sapote.png",
+  "/images/galerie/salle-d-eau-t2-papaye.png"
   ],
   "contact": {
     "email": "contact@bungalowsazure.site",
